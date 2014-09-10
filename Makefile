@@ -66,3 +66,4 @@ memory.o: memory.c
 
 uart.o: uart.c
 	$(CC) $(CFLAGS) -o $@ $<
+

@@ -18,11 +18,65 @@ WORD* MMU_TTB_PHY_BASE; // 页表基地址，这当然就是物理地址了，�
 // 创建页表
 static void create_page_table();
 
+
+void print_nand_id();
+
 void __main()
 {
+  BYTE str[2048];
+  BYTE* ptr;
+  int i;
+
   Uart_SendString("Loader!\n",8);
+
+  for(i=0;i<2048;i++)
+    str[i] = 0x31;
+
+  NF_init();
+
+  print_nand_id();
+
+
+  if( NF_WritePage(0, 1, str) == 0 )
+    Uart_SendString("Write Fail!\n",12);
+  /*
+  Uart_SendString(ptr,100);
+  Uart_SendString("\n",1);
+  */
+
+  if( NF_ReadPage(0, 1, ptr) )
+    {
+      Uart_SendString(ptr,100);
+      Uart_SendString("\n",1);
+    }
+  else
+    Uart_SendString("Read Fail!\n",11);
+
+  Uart_SendString(ptr,2048);
+  Uart_SendString("\n",1);
   
   while(1){}
+}
+void print_nand_id()
+{
+  HWORD id;
+  BYTE maker, device;
+
+  /*
+  device = (BYTE)id;
+  maker = (BYTE)(id >> 8);
+  Uart_SendByte(maker);
+  Uart_SendByte(device);
+  Uart_SendByte('\n');
+  */
+
+  id = NF_CheckId();
+  device = (BYTE)id;
+  maker = (BYTE)(id >> 8);
+
+  Uart_SendByte(maker);
+  Uart_SendByte(device);
+  Uart_SendByte('\n');
 }
 
 BYTE* _main()

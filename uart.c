@@ -51,7 +51,7 @@ void Uart_init(int baud)
 /* FIFO 使能下使用
 #define Tx_FIFO_FULL 0x4000
 */
-static void Uart_SendByte(char ch)
+void Uart_SendByte(char ch)
 {
   // while( UFSTAT0 & Tx_FIFO_FULL );// 当发送 FIFO 未满时才继续，FIFO 使能下使用
 
