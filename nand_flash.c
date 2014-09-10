@@ -127,9 +127,9 @@ static void NF_Reset()
 void NF_init()
 {
   NFCONF = (NF_TACLS << 12) | (NF_TWRPH0 << 8) | (NF_TWRPH1 << 4) | (0 << 0); // 第0位清零，即8位IO
-  NFCONT = (0<<13)|(0<<12)|(0<<10)|(0<<9)|(0<<8)|(1<<6)|(1<<5)|(1<<4)|(1<<1)|(1<<0);
-  //  NF_RSTECC(); //复位 ECC
-  //  NF_Reset(); //复位 Nand Flash 外部芯片
+  //  NFCONT = (0<<13)|(0<<12)|(0<<10)|(0<<9)|(0<<8)|(1<<6)|(1<<5)|(1<<4)|(1<<1)|(1<<0);
+  NFCONT = NFCONT_Val;
+  NF_Reset(); //复位 Nand Flash 外部芯片
 }
 
 
@@ -239,7 +239,7 @@ WORD NF_ReadPage(WORD block,WORD page,BYTE* buffer)
 WORD NF_IsBadBlock(WORD block)
 {
   int i;
-  WORD blockPage = (block << 5);
+  WORD blockPage = (block * NF_PAGEPBLOCK);
   unsigned short markLen = 7;
   BYTE tmp; // 暂存一个字节
 
@@ -302,8 +302,7 @@ WORD NF_WritePage(WORD block,WORD page,BYTE* buffer)
   // 往本页的 main 区里写入 buffer 里的内容
   for(i=0 ; i<NF_MAINSIZE ; i++)
     {
-      Uart_SendByte(*bufPt);
-      NF_WRDATA8(*bufPt++);
+       NF_WRDATA8(*bufPt++);
     }
 
   NF_MainECCLock(); // 锁定 main 区域的 ECC 校验码
@@ -334,4 +333,41 @@ WORD NF_WritePage(WORD block,WORD page,BYTE* buffer)
 
   return 1;
 
+}
+
+/* Function: 擦除指定的块
+   参数：block 要擦除的块号
+   返回值：0 擦除错误；1 擦除成功 */
+
+WORD NF_EraseBlock(WORD block)
+{
+  int i;
+  WORD blockPage = (block * NF_PAGEPBLOCK);
+
+  NF_nFCE_L();
+  NF_CLEAR_RB();
+  NF_CMD( NF_CMD_ERASE );
+
+  NF_ADDR( blockPage & 0xff );
+  NF_ADDR( (blockPage << 8) & 0xff );
+  NF_ADDR( (blockPage << 16) & 0xff );
+
+  NF_CMD( NF_CMD_ERASE_END );
+
+  for(i=0 ; i<10 ; i++);
+  NF_WAIT_RB();
+
+  NF_CMD( NF_CMD_RDSTAT );
+  for(i=0 ; i<10 ; i++);
+  
+  if(NF_RDDATA() & 0x01)
+    { // 擦除不成功
+      NF_nFCE_H();
+      return 0;
+    }
+  else
+    { // 擦除成功
+      NF_nFCE_H();
+      return 1;
+    }
 }

@@ -30,30 +30,27 @@ void __main()
   Uart_SendString("Loader!\n",8);
 
   for(i=0;i<2048;i++)
-    str[i] = 0x31;
+    str[i] = 0x32; // acsii 1
 
   NF_init();
 
   print_nand_id();
 
-
+  // 要写之前必须先擦除
+  if( NF_EraseBlock(0) == 0 )
+    Uart_SendString("Erase Fail!\n",12);
+  
   if( NF_WritePage(0, 1, str) == 0 )
     Uart_SendString("Write Fail!\n",12);
-  /*
-  Uart_SendString(ptr,100);
-  Uart_SendString("\n",1);
-  */
-
+  
   if( NF_ReadPage(0, 1, ptr) )
     {
-      Uart_SendString(ptr,100);
+      Uart_SendString(ptr,2048);
       Uart_SendString("\n",1);
     }
   else
     Uart_SendString("Read Fail!\n",11);
 
-  Uart_SendString(ptr,2048);
-  Uart_SendString("\n",1);
   
   while(1){}
 }
