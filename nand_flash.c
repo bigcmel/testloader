@@ -108,8 +108,6 @@
 // 开锁备份区域 ECC，允许生成新的 ECC
 #define NF_SpareECCUnlock() {NFCONT &= ~(1<<6);}
 
-
-
 /* Function: 复位 Nand Flash 外部芯片，注意不是复位 Nand Flash 控制器*/
 
 static void NF_Reset()
@@ -127,8 +125,8 @@ static void NF_Reset()
 void NF_init()
 {
   NFCONF = (NF_TACLS << 12) | (NF_TWRPH0 << 8) | (NF_TWRPH1 << 4) | (0 << 0); // 第0位清零，即8位IO
-  //  NFCONT = (0<<13)|(0<<12)|(0<<10)|(0<<9)|(0<<8)|(1<<6)|(1<<5)|(1<<4)|(1<<1)|(1<<0);
-  NFCONT = NFCONT_Val;
+  NFCONT = (0<<13)|(0<<12)|(0<<10)|(0<<9)|(0<<8)|(1<<6)|(1<<5)|(1<<4)|(1<<1)|(1<<0);
+
   NF_Reset(); //复位 Nand Flash 外部芯片
 }
 
@@ -173,7 +171,6 @@ WORD NF_ReadPage(WORD block,WORD page,BYTE* buffer)
   int i;
   WORD blockPage;
   BYTE* bufPt;
-  BYTE ECCbuf[6];
   WORD Mecc, Secc;
 
   bufPt = buffer;

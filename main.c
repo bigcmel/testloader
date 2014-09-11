@@ -21,62 +21,8 @@ static void create_page_table();
 
 void print_nand_id();
 
-void __main()
-{
-  BYTE str[2048];
-  BYTE* ptr;
-  int i;
 
-  Uart_SendString("Loader!\n",8);
-
-  for(i=0;i<2048;i++)
-    str[i] = 0x32; // acsii 1
-
-  NF_init();
-
-  print_nand_id();
-
-  // 要写之前必须先擦除
-  if( NF_EraseBlock(0) == 0 )
-    Uart_SendString("Erase Fail!\n",12);
-  
-  if( NF_WritePage(0, 1, str) == 0 )
-    Uart_SendString("Write Fail!\n",12);
-  
-  if( NF_ReadPage(0, 1, ptr) )
-    {
-      Uart_SendString(ptr,2048);
-      Uart_SendString("\n",1);
-    }
-  else
-    Uart_SendString("Read Fail!\n",11);
-
-  
-  while(1){}
-}
-void print_nand_id()
-{
-  HWORD id;
-  BYTE maker, device;
-
-  /*
-  device = (BYTE)id;
-  maker = (BYTE)(id >> 8);
-  Uart_SendByte(maker);
-  Uart_SendByte(device);
-  Uart_SendByte('\n');
-  */
-
-  id = NF_CheckId();
-  device = (BYTE)id;
-  maker = (BYTE)(id >> 8);
-
-  Uart_SendByte(maker);
-  Uart_SendByte(device);
-  Uart_SendByte('\n');
-}
-
-BYTE* _main()
+BYTE* __main()
 {
 
   /* 变量声明 */
@@ -90,18 +36,27 @@ BYTE* _main()
   WORD nf_blocknum, nf_pagepblock, nf_mainsize, nf_sparesize;
 
 
+  Uart_SendString("Loader!\n",8);
+  Uart_SendString("Create page table\n",18);
+
+
   /* 建立页表，并启动 MMU */
 
   MMU_TTB_PHY_BASE = (WORD*)SDRAM_BASE; // 确定页表的物理地址，在 SDRAM 的开头
 
   create_page_table(); // 建立页表
 
+  Uart_SendString("tag1\n",5);
+
   MMU_init(); // 启动 MMU，该函数在 memory.c 中定义
+
+  
+  Uart_SendString("Create page table end\n",22);
 
 
   /* 将 nand_flash 的 0 号块的 8～15 号页的内容（即存储了 kernel.bin 的一段程序）
    复制到内存的 KERNEL_BASE_ADDR 处
-  */
+  
 
   // 获取 nand_flash 的块数，页数，页大小等等信息
 
@@ -123,12 +78,11 @@ BYTE* _main()
 	    }      
 	}
     }
-
+  */
 
   // 示意代码到此为止没出错
 
-  LCD_ClearScr( 0x464646 );
-
+  while(1){}
   
   return (BYTE*)KERNEL_VIR_BASE_ADDR;
 }
@@ -153,7 +107,7 @@ static void create_page_table()
 #define MMU_USER_SECDESC (MMU_AP_USER | MMU_DOMAIN_0 | MMU_SPECIAL | MMU_CACHEABLE | MMU_BUFFERABLE | MMU_SECTION)
 
 
-  const WORD RAM_END_ADDR = 0xFFFFFFFF; // 最大寻址界限，这里暂且这样写，其实最好设为有效的最大地址
+  const WORD RAM_END_ADDR = 0xF0000000; // 最大寻址界限，这里暂且这样写，其实最好设为有效的最大地址
 
   const WORD MMU_SECTION_SIZE = 0x00100000; // 一个段占据的 1M
   const WORD PID_SECTION_SIZE = 0x02000000; // 一个进程代码段有 32M
@@ -210,4 +164,60 @@ static void create_page_table()
   phyaddr = LOADER_BASE;
 
   *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_SYS_SECDESC;
+}
+
+
+void _main()
+{
+  BYTE* str;
+  BYTE* ptr;
+  int i;
+
+  Uart_SendString("Loader.\n",8);
+  
+  Uart_SendString("Create page table\n",18);
+
+/*
+  str = (BYTE*)0x33000000;
+  ptr = (BYTE*)0x33100000;
+
+  NF_init();
+ 
+  print_nand_id();
+
+  // 要写之前必须先擦除
+  if( NF_EraseBlock(0) == 0 )
+    Uart_SendString("Erase Fail!\n",12);
+  
+  if( NF_WritePage(0, 0, str) == 0 )
+    Uart_SendString("Write Fail!\n",12);
+  
+  if( NF_ReadPage(0, 0, ptr) )
+    Uart_SendString(ptr,2048);
+  else
+    Uart_SendString("Read Fail!\n",11);
+*/
+  
+  while(1){}
+}
+void print_nand_id()
+{
+  HWORD id;
+  BYTE maker, device;
+
+  /*
+  device = (BYTE)id;
+  maker = (BYTE)(id >> 8);
+  Uart_SendByte(maker);
+  Uart_SendByte(device);
+  Uart_SendByte('\n');
+  */
+
+  id = NF_CheckId();
+  device = (BYTE)id;
+  maker = (BYTE)(id >> 8);
+
+  Uart_SendByte(maker);
+  Uart_SendByte(device);
+  Uart_SendByte('\n');
 }
