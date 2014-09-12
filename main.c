@@ -3,6 +3,7 @@
 const WORD SDRAM_BASE =  0x30000000; // sdram 的起始地址
 #define IRAM_BASE 0x40000000 // Internal Memory Base Address
 #define LOADER_BASE 0x33000000 // loader 的加载地址
+#define VECTORS_BASE 0xFFFF0000 // 高位向量表的基地址
 
 WORD* MMU_TTB_PHY_BASE; // 页表基地址，这当然就是物理地址了，因为此时页表还没加载
 
@@ -17,6 +18,7 @@ WORD* MMU_TTB_PHY_BASE; // 页表基地址，这当然就是物理地址了，�
 
 // 创建页表
 static void create_page_table();
+static void create_page_table1();
 
 
 void print_nand_id();
@@ -44,7 +46,7 @@ BYTE* __main()
 
   MMU_TTB_PHY_BASE = (WORD*)SDRAM_BASE; // 确定页表的物理地址，在 SDRAM 的开头
 
-  create_page_table(); // 建立页表
+  create_page_table1(); // 建立页表
 
   Uart_SendString("tag1\n",5);
 
@@ -82,21 +84,23 @@ BYTE* __main()
 
   // 示意代码到此为止没出错
 
+  ptr = (BYTE*)0x20000000;
+  *ptr = 0x4a;
+
   while(1){}
   
   return (BYTE*)KERNEL_VIR_BASE_ADDR;
 }
 
-static void create_page_table()
+static void create_page_table1()
 {
-
-  /* 这里参考的书籍是《ARM体系结构与编程》（杜春雷）第一版，
+    /* 这里参考的书籍是《ARM体系结构与编程》（杜春雷）第一版，
    下面所注页码均为本书页码 */
 
 
 #define MMU_AP_SYS (2 << 10) // 访问权限位AP，P188，这里为2，表示该段在特权模式下允许读写，在用户模式下只读
 #define MMU_AP_USER (3 << 10) // 这里AP为3，表示该段不管在特权模式，还是在用户模式下都可读可写
-#define MMU_DOMAIN_0 (0 << 5) // 该段所处的域，此处是0域，P180
+#define MMU_DOMAIN_0 (1 << 5) // 该段所处的域，此处是0域，P180
 #define MMU_SPECIAL (1 << 4) // 该位为 1，P180
 #define MMU_CACHEABLE (1 << 3) // C位为1，允许 cache
 #define MMU_BUFFERABLE (1 << 2) // B位为1，允许 write buffer
@@ -108,6 +112,65 @@ static void create_page_table()
 
 
   const WORD RAM_END_ADDR = 0xF0000000; // 最大寻址界限，这里暂且这样写，其实最好设为有效的最大地址
+
+  const WORD MMU_SECTION_SIZE = 0x00100000; // 一个段占据的 1M
+  const WORD PID_SECTION_SIZE = 0x02000000; // 一个进程代码段有 32M
+
+  const WORD PID_NUM = 32; // p206，快速上下文切换技术中的进程代码段的数量
+
+  WORD viraddr, phyaddr; // 虚拟地址与物理地址
+
+  WORD pid;
+
+  viraddr = 0;
+  phyaddr = 0;
+  *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_USER_SECDESC;
+  /*
+  viraddr = 0x40000000;
+  phyaddr = 0x40000000;
+  while(viraddr < 0xFF000000)
+    {
+      *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_USER_SECDESC;     
+      viraddr += 0x100000;
+      phyaddr += 0x100000;
+    }
+  */
+  viraddr = 0x30000000;
+  phyaddr = 0x30000000;
+  while(viraddr < 0x34000000)
+    {
+      *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_SYS_SECDESC;     
+      viraddr += 0x100000;
+      phyaddr += 0x100000;
+    }
+
+  viraddr = 0x20000000;
+  phyaddr = 0x32000000;
+
+  *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_USER_SECDESC;  
+}
+
+static void create_page_table()
+{
+
+  /* 这里参考的书籍是《ARM体系结构与编程》（杜春雷）第一版，
+   下面所注页码均为本书页码 */
+
+
+#define MMU_AP_SYS (2 << 10) // 访问权限位AP，P188，这里为2，表示该段在特权模式下允许读写，在用户模式下只读
+#define MMU_AP_USER (3 << 10) // 这里AP为3，表示该段不管在特权模式，还是在用户模式下都可读可写
+#define MMU_DOMAIN_0 (1 << 5) // 该段所处的域，此处是0域，P180
+#define MMU_SPECIAL (1 << 4) // 该位为 1，P180
+#define MMU_CACHEABLE (1 << 3) // C位为1，允许 cache
+#define MMU_BUFFERABLE (1 << 2) // B位为1，允许 write buffer
+#define MMU_SECTION (2 << 0) // 表示这是段描述符
+
+  // 段描述符
+#define MMU_SYS_SECDESC (MMU_AP_SYS | MMU_DOMAIN_0 | MMU_SPECIAL | MMU_CACHEABLE | MMU_BUFFERABLE | MMU_SECTION)
+#define MMU_USER_SECDESC (MMU_AP_USER | MMU_DOMAIN_0 | MMU_SPECIAL | MMU_CACHEABLE | MMU_BUFFERABLE | MMU_SECTION)
+
+
+  const WORD RAM_END_ADDR = 0xFF000000; // 最大寻址界限，这里暂且这样写，其实最好设为有效的最大地址
 
   const WORD MMU_SECTION_SIZE = 0x00100000; // 一个段占据的 1M
   const WORD PID_SECTION_SIZE = 0x02000000; // 一个进程代码段有 32M
@@ -158,12 +221,21 @@ static void create_page_table()
       phyaddr += MMU_SECTION_SIZE;
     }
 
+  // 高位的向量表地址
+  viraddr = VECTORS_BASE;
+  phyaddr = VECTORS_BASE;
+  *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_SYS_SECDESC;
   
   /* loader 所在的这1M空间也得虚拟物理保持一致，因为此时还是在 loader 的代码下 */
   viraddr = LOADER_BASE;
   phyaddr = LOADER_BASE;
-
   *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_SYS_SECDESC;
+
+  
+  viraddr = 0x20000000;
+  phyaddr = SDRAM_BASE;
+  *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_SYS_SECDESC;
+
 }
 
 
