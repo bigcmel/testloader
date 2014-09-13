@@ -2,7 +2,7 @@
 # Makefile for Loader of nansl    #
 ###################################
 
-ENTRYPOINT	= 0x33000000
+ENTRYPOINT	= 0x31000000
 
 # Programs, flags, etc.
 ARM-TOOLS-PATH	= /home/bigc/Apps/arm-linux-toolchain-4.4.3/bin
