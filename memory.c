@@ -93,7 +93,7 @@ void MMU_init()
      //     "ORR R0, R0, #0x0004\n" // C位，使能数据cache（若使能此位会有错误发生，原因不明）
      "ORR R0, R0, #0x1000\n" // I位，使能指令cache
      "ORR R0, R0, #0x0008\n" // W位，使能写入缓冲
-     "ORR R0, R0, #0x2000\n" // V位，控制向量表的位置为 0xFFFF0000～0xFFFF001C
+     "ORR R0, R0, #0x2000\n" // V位，控制向量表的位置为 0xFFFF0000～0xFFFF001C 
      "ORR R0, R0, #0x0001\n" // M位，使能 MMU
 
      "MCR P15, 0, R0, C1, C0, 0\n": /* 汇编语句部分结束 */ : /* 无输出部分 */

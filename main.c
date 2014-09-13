@@ -46,7 +46,7 @@ BYTE* __main()
 
   MMU_TTB_PHY_BASE = (WORD*)SDRAM_BASE; // 确定页表的物理地址，在 SDRAM 的开头
 
-  create_page_table1(); // 建立页表
+  create_page_table(); // 建立页表
 
   Uart_SendString("tag1\n",5);
 
@@ -125,7 +125,7 @@ static void create_page_table1()
   viraddr = 0;
   phyaddr = 0;
   *(MMU_TTB_PHY_BASE + (viraddr >> 20)) = (phyaddr & 0xFFF00000) | MMU_USER_SECDESC;
-  /*
+  
   viraddr = 0x40000000;
   phyaddr = 0x40000000;
   while(viraddr < 0xFF000000)
@@ -134,7 +134,7 @@ static void create_page_table1()
       viraddr += 0x100000;
       phyaddr += 0x100000;
     }
-  */
+  
   viraddr = 0x30000000;
   phyaddr = 0x30000000;
   while(viraddr < 0x34000000)
