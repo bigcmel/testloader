@@ -12,14 +12,14 @@
 	.ARM
 
 	.GLOBL	_start		@ default entry point
-_start:	
+_start:
 
 @ Enter the C code -------------------------------------------------------------
 
 	.EXTERN __main
                 BL	__main	@ __main函数将返回 kernel.bin 的加载地址到 R0
 	
-@		MOV	PC, R0	@ 此时跳入 kernel
+		MOV	PC, R0	@ 此时跳入 kernel
 
 		B	.
 
